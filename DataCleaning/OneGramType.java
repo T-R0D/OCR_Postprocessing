@@ -1,0 +1,46 @@
+public enum OneGramType {
+    X0,
+    X1,
+    X2,
+    X3,
+    X4,
+    X5,
+    X6,
+    X7,
+    X8,
+    X9,
+    Xa,
+    Xb,
+    Xc,
+    Xd,
+    Xe,
+    Xf,
+    Xg,
+    Xh,
+    Xi,
+    Xj,
+    Xk,
+    Xl,
+    Xm,
+    Xn,
+    Xo,
+    Xp,
+    Xq,
+    Xr,
+    Xs,
+    Xt,
+    Xu,
+    Xv,
+    Xw,
+    Xx,
+    Xy,
+    Xz,
+    Xother,
+    Xpos,
+    Xpunctuation;
+
+    @Override
+    public String toString() {
+        return this.name().substring(1);
+    }
+}
