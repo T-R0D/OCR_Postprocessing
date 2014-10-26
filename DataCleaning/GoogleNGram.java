@@ -1,7 +1,3 @@
-/**
- * Created by Terence
- * on 10/24/2014.
- */
 public class GoogleNGram {
     private Integer mNSize;
     private String[] mNGram;
@@ -50,10 +46,16 @@ public class GoogleNGram {
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
 
-        for(String word : mNGram) {
-            stringBuilder.append(word);
-            stringBuilder.append("\t");
+//        for(String word : mNGram) {
+//            stringBuilder.append(word);
+//            stringBuilder.append("\t");
+//        }
+        stringBuilder.append(" ");
+        for(int i = 1; i < mNGram.length; i++) {
+            stringBuilder.append(" ");
+            stringBuilder.append(mNGram[i]);
         }
+        stringBuilder.append("\t");
         stringBuilder.append(mYear);
         stringBuilder.append("\t");
         stringBuilder.append(mNumAppearances);

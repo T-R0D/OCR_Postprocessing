@@ -1,5 +1,7 @@
 import java.io.*;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -41,20 +43,22 @@ public class GoogleNGramCleaner {
         try {
             System.out.println("Parsing aruments...");
             ProgramParameters programParameters = parseArguments(args);
+            List<String> nGrams;
 
             if (programParameters.nGramSize == 1) {
-                System.out.println("Obtaining 1-grams...");
-                for (OneGramType oneGram : OneGramType.values()) {
-                    createFilteredNGramFile(oneGram.toString(), programParameters);
+                nGrams = createOneGramList();
+                for (String oneGram : nGrams) {
+                    System.out.println("Obtaining 1-grams for " + oneGram + "...");
+                    createFilteredNGramFile(oneGram, programParameters);
                 }
             } else {
-                System.out.println("Obtaining n-grams...");
-                for (NGramType nGram : NGramType.values()) {
-                    createFilteredNGramFile(nGram.toString(), programParameters);
-                    break;
+                nGrams = createNGramList();
+                for (String nGram : nGrams) {
+                    System.out.println("Obtaining n-grams for " + nGram + "...");
+                    createFilteredNGramFile(nGram, programParameters);
                 }
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             System.out.println("Exception: " + e.toString());
         }
     }
@@ -63,47 +67,37 @@ public class GoogleNGramCleaner {
     public static ProgramParameters parseArguments(String[] pArguments) {
         ProgramParameters programParameters = new GoogleNGramCleaner.ProgramParameters();
 
-        for(String argument : pArguments) {
+        for (String argument : pArguments) {
             String[] flagAndValue = argument.split("=");
+            String flag = flagAndValue[0];
 
-            switch(flagAndValue[0]) {
-                case BEGIN_YEAR_ARG:
-                    programParameters.beginYear = Integer.valueOf(flagAndValue[1]);
-                    break;
-                case END_YEAR_ARG:
-                    programParameters.endYear = Integer.valueOf(flagAndValue[1]);
-                    break;
-                case LANGUAGE_ARG:
-                    switch(flagAndValue[1]) {
-                        case "french":
-                            programParameters.language = FRENCH;
-                            break;
-                        default:
-                            programParameters.language = FRENCH;
-                            break;
-                    }
-                    break;
-                case DATA_SET_ARG:
-                    switch(Integer.valueOf(flagAndValue[1])) {
-                        case 2012:
-                            programParameters.dataSetVersion = DATA_FROM_2012;
-                            break;
-                        case 2009:
-                            programParameters.dataSetVersion = DATA_FROM_2009;
-                            break;
-                        default:
-                            programParameters.dataSetVersion = DATA_FROM_2012;
-                            break;
-                    }
-                    break;
-                case WORKING_DIR_ARG:
-                    programParameters.workingDirectory = flagAndValue[1];
-                    break;
-                case N_SIZE_ARG:
-                    programParameters.nGramSize = Integer.parseInt(flagAndValue[1]);
-                    break;
-                default:
-                    break;
+            if (flag.equals(BEGIN_YEAR_ARG)) {
+                programParameters.beginYear = Integer.valueOf(flagAndValue[1]);
+            } else if (flag.equals(END_YEAR_ARG)) {
+                programParameters.endYear = Integer.valueOf(flagAndValue[1]);
+            } else if (flag.equals(LANGUAGE_ARG)) {
+                String languageValue = flagAndValue[1];
+                if (languageValue.equals("french")) {
+                    programParameters.language = FRENCH;
+                } else {
+                    programParameters.language = FRENCH;
+                }
+            } else if (flag.equals(DATA_SET_ARG)) {
+                switch (Integer.valueOf(flagAndValue[1])) {
+                    case 2012:
+                        programParameters.dataSetVersion = DATA_FROM_2012;
+                        break;
+                    case 2009:
+                        programParameters.dataSetVersion = DATA_FROM_2009;
+                        break;
+                    default:
+                        programParameters.dataSetVersion = DATA_FROM_2012;
+                        break;
+                }
+            } else if (flag.equals(WORKING_DIR_ARG)) {
+                programParameters.workingDirectory = flagAndValue[1];
+            } else if (flag.equals(N_SIZE_ARG)) {
+                programParameters.nGramSize = Integer.parseInt(flagAndValue[1]);
             }
         }
 
@@ -112,7 +106,6 @@ public class GoogleNGramCleaner {
 
     public static URL createGoogleNGramDataURL(ProgramParameters pParameters, String pFirstLetters) {
         URL nGramDataURL = null;
-
         // Ex: http://storage.googleapis.com/books/ngrams/books/googlebooks
         //                                                                 - fre -all- 2 gram- 20120701 - dr .gz
         try {
@@ -148,7 +141,7 @@ public class GoogleNGramCleaner {
     public static void createFilteredNGramFile(String pFirstLetters, ProgramParameters pParameters) {
         try {
             String fileName = createFilteredNGramFileName(pFirstLetters, pParameters);
-            Writer writer =
+            BufferedWriter writer =
                     new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(fileName))));
 
             URL nGramDataURL = createGoogleNGramDataURL(pParameters, pFirstLetters);
@@ -157,13 +150,16 @@ public class GoogleNGramCleaner {
             String line = inputReader.readLine();
             while (line != null) {
                 GoogleNGram googleNGram = new GoogleNGram(line, pParameters.nGramSize);
-                writer.write(googleNGram.toString());
-                writer.write(System.lineSeparator());
+                if (pParameters.beginYear <= googleNGram.getYear() && googleNGram.getYear() <= pParameters.endYear) {
+                    writer.write(googleNGram.toString());
+                    writer.newLine();
+                }
 
                 line = inputReader.readLine();
             }
 
             inputReader.close();
+            writer.flush();
             writer.close();
         } catch (Exception e) {
             System.out.println(e.toString());
@@ -171,64 +167,72 @@ public class GoogleNGramCleaner {
     }
 
 
-    public static void createOneGramEnumFile() {
-        try {
-            Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File("OneGramType.java"))));
+    static List<String> createOneGramList() {
+        List<String> nGrams = new ArrayList<String>(50);
 
-            writer.write("public enum OneGramTypes {\n");
-
-            for(int i = 0; i < 10; i++) {
-                writeNGramName(String.valueOf(i), ",", writer);
-            }
-            for(char firstLetter = 'a'; firstLetter <= 'z'; firstLetter++) {
-                writeNGramName(String.valueOf(firstLetter), ",", writer);
-            }
-            writeNGramName("other", ",", writer);
-            writeNGramName("pos", ",", writer);
-            writeNGramName("punctuation", ";\n", writer);
-
-            writeToStringFunction(writer);
-
-            writer.write("}" + System.lineSeparator());
-            writer.flush();
-            writer.close();
-        } catch(Exception e) {
-            System.out.println("exception: " + e.toString());
+        for (int i = 0; i < 10; i++) {
+            nGrams.add(String.valueOf(i));
         }
+        for (char firstLetter = 'a'; firstLetter <= 'z'; firstLetter++) {
+            nGrams.add(String.valueOf(firstLetter));
+
+        }
+        nGrams.add("other");
+        nGrams.add("pos");
+        nGrams.add("punctuation");
+
+        return nGrams;
     }
 
-    static void createNGramEnumFile() {
+    static List<String> createNGramList() {
+        List<String> nGrams = new ArrayList<String>(800);
+
+        for (int i = 0; i < 10; i++) {
+            nGrams.add(String.valueOf(i));
+        }
+        for (char firstLetter = 'a'; firstLetter <= 'z'; firstLetter++) {
+            nGrams.add(firstLetter + "_");
+
+            for (char secondLetter = 'a'; secondLetter <= 'z'; secondLetter++) {
+                nGrams.add(String.valueOf(firstLetter) + String.valueOf(secondLetter));
+            }
+        }
+        nGrams.add("_ADJ_");
+        nGrams.add("_ADP_");
+        nGrams.add("_ADV_");
+        nGrams.add("_CONJ_");
+        nGrams.add("_DET_");
+        nGrams.add("_NOUN_");
+        nGrams.add("_PRON_");
+        nGrams.add("_PRT_");
+        nGrams.add("_VERB_");
+
+        return nGrams;
+    }
+
+    static void createNGramEnumFile(int pNGramSize) {
         try {
             Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File("NGramType.java"))));
 
-            writer.write("public enum NGramTypes {\n");
+            writer.write("public enum NGramTypes {" + System.lineSeparator());
 
-            for(int i = 0; i < 10; i++) {
-                writeNGramName(String.valueOf(i), ",", writer);
+            List<String> nGrams;
+            if (pNGramSize == 1) {
+                nGrams = createOneGramList();
+            } else {
+                nGrams = createNGramList();
             }
-            for(char firstLetter = 'a'; firstLetter <= 'z'; firstLetter++) {
-                writeNGramName(firstLetter + "_", ",", writer);
-
-                for(char secondLetter = 'a'; secondLetter <= 'z'; secondLetter++) {
-                    writeNGramName(String.valueOf(firstLetter) + String.valueOf(secondLetter), ",", writer);
-                }
+            for (int i = 0; i < (nGrams.size() - 1); i++) {
+                writeNGramName(nGrams.get(i), ",", writer);
             }
-            writeNGramName("_ADJ_", ",", writer);
-            writeNGramName("_ADP_", ",", writer);
-            writeNGramName("_ADV_", ",", writer);
-            writeNGramName("_CONJ_", ",", writer);
-            writeNGramName("_DET_", ",", writer);
-            writeNGramName("_NOUN_", ",", writer);
-            writeNGramName("_PRON_", ",", writer);
-            writeNGramName("_PRT_", ",", writer);
-            writeNGramName("_VERB_", ";\n", writer);
+            writeNGramName(nGrams.get(nGrams.size() - 1), ";" + System.lineSeparator(), writer);
 
-            writeToStringFunction(writer);
+            writeNGramEnumToStringFunction(writer);
 
-            writer.write("}\n");
+            writer.write("}" + System.lineSeparator());
 
             writer.close();
-        } catch(Exception e) {
+        } catch (Exception e) {
             System.out.println("exception: " + e.toString());
         }
     }
@@ -243,18 +247,21 @@ public class GoogleNGramCleaner {
 
         try {
             pWriter.write(stringBuilder.toString());
-        } catch(Exception e) {
+        } catch (Exception e) {
             System.out.println(e.toString());
         }
     }
 
-    public static void writeToStringFunction(Writer pWriter) {
+    public static void writeNGramEnumToStringFunction(Writer pWriter) {
         try {
-            pWriter.write("\n@Override\n");
-            pWriter.write("public String toString() {\n");
-            pWriter.write("return this.name().substring(1);\n");
-            pWriter.write("}\n");
-        } catch(Exception e) {
+            pWriter.write(
+                    "   @Override" + System.lineSeparator() +
+                            "   public String toString() {" + System.lineSeparator() +
+                            "   return this.name().substring(1);" + System.lineSeparator() +
+                            "   }" + System.lineSeparator()
+            );
+
+        } catch (Exception e) {
             System.out.println(e.toString());
         }
     }
