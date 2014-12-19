@@ -214,7 +214,7 @@ public class GoogleNGramCleaner {
         try {
             Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File("NGramType.java"))));
 
-            writer.write("public enum NGramTypes {" + System.lineSeparator());
+            writer.write("public enum NGramTypes {" + System.getProperty("line.separator"));
 
             List<String> nGrams;
             if (pNGramSize == 1) {
@@ -225,11 +225,11 @@ public class GoogleNGramCleaner {
             for (int i = 0; i < (nGrams.size() - 1); i++) {
                 writeNGramName(nGrams.get(i), ",", writer);
             }
-            writeNGramName(nGrams.get(nGrams.size() - 1), ";" + System.lineSeparator(), writer);
+            writeNGramName(nGrams.get(nGrams.size() - 1), ";" + System.getProperty("line.separator"), writer);
 
             writeNGramEnumToStringFunction(writer);
 
-            writer.write("}" + System.lineSeparator());
+            writer.write("}" + System.getProperty("line.separator"));
 
             writer.close();
         } catch (Exception e) {
@@ -243,7 +243,7 @@ public class GoogleNGramCleaner {
         stringBuilder.append("X"); // this is here so that the enum names aren't just a number or single letter
         stringBuilder.append(pName);
         stringBuilder.append(pDelimeter);
-        stringBuilder.append(System.lineSeparator());
+        stringBuilder.append(System.getProperty("line.separator"));
 
         try {
             pWriter.write(stringBuilder.toString());
@@ -255,10 +255,10 @@ public class GoogleNGramCleaner {
     public static void writeNGramEnumToStringFunction(Writer pWriter) {
         try {
             pWriter.write(
-                    "   @Override" + System.lineSeparator() +
-                            "   public String toString() {" + System.lineSeparator() +
-                            "   return this.name().substring(1);" + System.lineSeparator() +
-                            "   }" + System.lineSeparator()
+                    "   @Override" + System.getProperty("line.separator") +
+                            "   public String toString() {" + System.getProperty("line.separator") +
+                            "   return this.name().substring(1);" + System.getProperty("line.separator") +
+                            "   }" + System.getProperty("line.separator")
             );
 
         } catch (Exception e) {
