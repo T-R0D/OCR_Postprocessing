@@ -1,13 +1,11 @@
 package NGramSpellCorrection;
 
+import NGramTree.NGramTreeDictionary;
 import org.apache.commons.collections4.MultiMap;
 import org.apache.commons.collections4.map.MultiValueMap;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import org.gauner.jSpellCorrect.spi.ToySpellingCorrector;
@@ -20,19 +18,29 @@ public class TestDriver {
     public static final String TEST_TEXT =
         "C:\\Users\\Terence\\Desktop\\AI_Project\\Google N-gram Cleaner\\SpellingCorrection\\src\\NGramSpellCorrection\\test_text.txt";
     public static final String BIG_TXT = "C:\\Users\\Terence\\Desktop\\big.txt";
+    public static final String BIG_ONE_GRAMS_TXT = "C:\\Users\\Terence\\Desktop\\big_1grams.txt";
     public static final String TEST_CASES_1 = "C:\\Users\\Terence\\Desktop\\test_cases_1.txt";
     public static final String TEST_CASES_2 = "C:\\Users\\Terence\\Desktop\\test_cases_2.txt";
 
 
     public static void main(String[] args) {
-//        TestTheOtherGuysThing(BIG_TXT, TEST_CASES_1);
+        String testCaseSet = TEST_CASES_2;
+        Integer bias = 0;
 
-        TestSpellCheckerOnWord(BIG_TXT, "cak", "cake");
-        TestSpellCheckerOnWord(BIG_TXT, "Cads", "lads");
-        TestSpellCheckerOnWord(BIG_TXT, "Dok", "ok");
-        TestSpellCheckerOnWord(BIG_TXT, "Speling", "Spelling");
+        System.out.println("Testing the tree\n===========================");
+        testNGramTreeDictionarySpellCheckerOnFile(BIG_ONE_GRAMS_TXT, testCaseSet, bias);
 
-//        TestSpellCheckerOnFile(BIG_TXT, TEST_CASES_1, 1);
+//        System.out.println("\n\n\n");
+//
+//        System.out.println("Testing the original\n===================================");
+//        TestSpellCheckerOnFile(BIG_TXT, testCaseSet, 0);
+
+//        TestTheOtherGuysThing(BIG_TXT, testCaseSet);
+
+//        TestSpellCheckerOnWord(BIG_TXT, "cak", "cake");
+//        TestSpellCheckerOnWord(BIG_TXT, "Cads", "lads");
+//        TestSpellCheckerOnWord(BIG_TXT, "Dok", "ok");
+//        TestSpellCheckerOnWord(BIG_TXT, "Speling", "Spelling");
     }
 
     public static void TestTheOtherGuysThing(String dictionaryFileName, String testCaseFileName) {
@@ -100,7 +108,7 @@ public class TestDriver {
 
         Integer correctMatches = 0;
         Integer incorrectMatches = 0;
-        Double total = 0.0;
+        Integer total = 0;
         for (String testWord : testCases.keySet()) {
             List<String> misspellings = (List<String>) testCases.get(testWord);
             for (String misspelling : misspellings) {
@@ -111,15 +119,49 @@ public class TestDriver {
                     System.out.println(CreateCorrectionResultString(misspelling, correction, testWord));
                     incorrectMatches++;
                 }
-                total += 1.0;
+                total += 1;
             }
         }
 
-        System.out.println("% correctly corrected: " + ((double) correctMatches / total));
-        System.out.println("num correct: " + correctMatches);
-        System.out.println("% incorrectly corrected: " + ((double) incorrectMatches / total));
-        System.out.println("num incorrect: " + incorrectMatches);
+        printResultSummary(correctMatches, incorrectMatches, total);
 //        System.out.println(testChecker.getDictionary().dictionaryToString());
+    }
+
+    public static void testNGramTreeDictionarySpellCheckerOnFile(
+        String dictionaryFileName,
+        String testCaseFileName,
+        Integer correctWordBias) {
+
+        NGramTreeDictionary dictionary = new NGramTreeDictionary();
+        dictionary.addNGramsFromNGramFile(dictionaryFileName);
+//        System.out.println(dictionary.toString());
+
+        MultiMap<String, String> testCases = ReadTestCasesFromFile(testCaseFileName);
+        if (correctWordBias > 0) {
+            for (String word : testCases.keySet()) {
+                dictionary.addFrequencyOfSequence(correctWordBias, word);
+            }
+        }
+
+        Integer correctMatches = 0;
+        Integer incorrectMatches = 0;
+        Integer total = 0;
+        for (String testWord : testCases.keySet()) {
+            List<String> misspellings = (List<String>) testCases.get(testWord);
+            for (String misspelling : misspellings) {
+                String correction = dictionary.findMostLikelyReplacement(misspelling);
+                if (correction.equals(testWord)) {
+                    correctMatches++;
+                } else {
+                    System.out.println(CreateCorrectionResultString(misspelling, correction, testWord));
+                    incorrectMatches++;
+                }
+                total += 1;
+            }
+        }
+
+        printResultSummary(correctMatches, incorrectMatches, total);
+//        System.out.println(dictionary.toString());
     }
 
     public static MultiMap<String, String> ReadTestCasesFromFile(String testCaseFileName) {
@@ -153,5 +195,13 @@ public class TestDriver {
             actual,
             output.toLowerCase().equals(actual.toLowerCase()) ? "CORRECT!" : "WRONG!"
         );
+    }
+
+    public static void printResultSummary(int correctMatches, int incorrectMatches, int total) {
+        System.out.println("% correctly corrected: " + ((double) correctMatches / (double) total));
+        System.out.println("num correct: " + correctMatches);
+        System.out.println(
+            "% incorrectly corrected: " + ((double) incorrectMatches / (double) total));
+        System.out.println("num incorrect: " + incorrectMatches);
     }
 }

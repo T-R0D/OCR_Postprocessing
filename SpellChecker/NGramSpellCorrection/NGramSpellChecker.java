@@ -16,11 +16,11 @@ public class NGramSpellChecker {
     public static final String DEFAULT_ALPHABET = "abcdefghijklmnopqrstuvwxyz";
 
     public final String mAlphabet;
-    private final SpellCheckDictionary mCorrectWords;
+    private final SingleWordSpellCheckDictionary mCorrectWords;
 
     public NGramSpellChecker() {
         mAlphabet = DEFAULT_ALPHABET;
-        mCorrectWords = new SpellCheckDictionary();
+        mCorrectWords = new SingleWordSpellCheckDictionary();
     }
 
     public String findMostLikelyReplacementFor(String word) {
@@ -36,8 +36,9 @@ public class NGramSpellChecker {
             for (String mutation : oneEdits) {
                 candidates.put(mCorrectWords.getOrDefault(mutation, 0), mutation);
             }
+            candidates.remove(0);
 
-            if (candidates.size() == 1) { // just the 0->'*' entry
+            if (candidates.size() == 0) {
                 for (String mutation : oneEdits) {
                     for (String mutation2 : generateMutationsOfWord(mutation, mAlphabet)) {
                         candidates.put(mCorrectWords.getOrDefault(mutation2, 0), mutation2);
@@ -46,7 +47,7 @@ public class NGramSpellChecker {
                 candidates.remove(0);
             }
 
-            if (candidates.size() > 1) { // that 0->'*' entry again
+            if (candidates.size() > 0) {
                 Integer maxFrequency = Collections.max(candidates.keySet());
                 bestCandidate = candidates.getOrDefault(maxFrequency, lowerCasedWord);
             }
@@ -155,10 +156,10 @@ public class NGramSpellChecker {
         for (String[] split : splits) {
             if (split[1].length() > 1) {
                 transformedWords.add(
-                  split[0] +
-                  split[1].substring(1, 2) +
-                  split[1].substring(0, 1) +
-                  split[1].substring(2)
+                    split[0] +
+                        split[1].substring(1, 2) +
+                        split[1].substring(0, 1) +
+                        split[1].substring(2)
                 );
             }
         }
@@ -166,7 +167,7 @@ public class NGramSpellChecker {
         return transformedWords;
     }
 
-    public SpellCheckDictionary getDictionary() {
+    public SingleWordSpellCheckDictionary getDictionary() {
         return mCorrectWords;
     }
 }
